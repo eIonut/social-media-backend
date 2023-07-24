@@ -1,16 +1,16 @@
-const http = require("http");
+require("dotenv").config();
 
-const hostname = "127.0.0.1";
-const port = 3000;
+const authRouter = require("./routes/authRoutes");
 
-const server = http.createServer((req, res) => {
-  res.statusCode = 200;
-  res.setHeader("Content-Type", "text/plain");
-  res.end("Hello World\n");
+const express = require("express");
+const app = express();
+
+app.use(express.json());
+
+app.use("/api/auth", authRouter);
+
+app.get("/", (req, res) => {
+  res.send("Asd");
 });
-
-console.log("changed something");
-
-server.listen(port, hostname, () => {
-  console.log(`Server running at http://${hostname}:${port}/`);
-});
+const port = process.env.PORT || 5000;
+app.listen(port, () => console.log(`Server is listening on port ${port}`));
