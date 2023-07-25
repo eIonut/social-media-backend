@@ -1,5 +1,5 @@
 require("dotenv").config();
-// require("express-async-errors");
+require("express-async-errors");
 
 const authRouter = require("./routes/authRoutes");
 const postRouter = require("./routes/postRoutes");
@@ -9,10 +9,14 @@ const app = express();
 
 const connectDB = require("./db/connect");
 
+const errorHandlerMiddleware = require("./middleware/error-handler");
+
 app.use(express.json());
 
 app.use("/api/auth", authRouter);
 app.use("/api/post", postRouter);
+
+app.use(errorHandlerMiddleware);
 
 const port = process.env.PORT || 5000;
 
@@ -24,9 +28,5 @@ const start = async () => {
     console.log(error);
   }
 };
-
-app.get("/", (req, res) => {
-  res.send("Asd");
-});
 
 start();
