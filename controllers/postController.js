@@ -3,6 +3,7 @@ const { StatusCodes } = require("http-status-codes");
 
 const createPost = async (req, res) => {
   // TODO, user-ul trebuie luat din request
+  // TODO, adaugam imagini
 
   const { description, user } = req.body;
 
@@ -68,10 +69,20 @@ const updatePost = async (req, res) => {
   return res.status(StatusCodes.OK).json({ post });
 };
 
+const getUserPosts = async (req, res) => {
+  const { userId } = req.params;
+  const posts = await Post.find({ user: userId });
+  if (!posts) {
+    return res.status(StatusCodes.NOT_FOUND).json({ msg: "User has no posts" });
+  }
+  return res.status(StatusCodes.OK).json({ posts });
+};
+
 module.exports = {
   createPost,
   getPosts,
   getOnePost,
   deletePost,
   updatePost,
+  getUserPosts,
 };
