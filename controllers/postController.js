@@ -27,13 +27,51 @@ const getPosts = async (req, res) => {
   return res.status(StatusCodes.OK).json({ posts, count: posts.length });
 };
 
-const getOnePost = async (req, res) => {};
+const getOnePost = async (req, res) => {
+  const { postId } = req.params;
+  const post = await Post.findOne({ _id: postId });
+  if (!post) {
+    return res
+      .status(StatusCodes.NOT_FOUND)
+      .json({ msg: `No post with id ${postId} ` });
+  }
+  return res.status(StatusCodes.OK).json({ post });
+};
 
-const deletePost = async (req, res) => {};
+const deletePost = async (req, res) => {
+  const { postId } = req.params;
+  const post = await Post.findOne({ _id: postId });
+  if (!post) {
+    return res
+      .status(StatusCodes.NOT_FOUND)
+      .json({ msg: `No post with id ${postId} ` });
+  }
 
-const updatePost = async (req, res) => {};
+  await post.deleteOne();
+
+  return res
+    .status(StatusCodes.OK)
+    .json({ msg: `Succesfully deleted post id: ${postId}` });
+};
+
+const updatePost = async (req, res) => {
+  const { postId } = req.params;
+  const post = await Post.findOneAndUpdate({ _id: postId }, req.body, {
+    new: true,
+    runValidators: true,
+  });
+  if (!post) {
+    return res
+      .status(StatusCodes.NOT_FOUND)
+      .json({ msg: `No post with id ${postId} ` });
+  }
+  return res.status(StatusCodes.OK).json({ post });
+};
 
 module.exports = {
   createPost,
   getPosts,
+  getOnePost,
+  deletePost,
+  updatePost,
 };
