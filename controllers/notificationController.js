@@ -1,6 +1,7 @@
 const Notification = require("../models/Notification");
 const { StatusCodes } = require("http-status-codes");
 const User = require("../models/User");
+const Post = require("../models/Post");
 
 const createNotification = async (req, res) => {
   const { id: user } = req.user;

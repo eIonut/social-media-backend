@@ -16,6 +16,8 @@ const NotificationSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    post: { type: mongoose.Types.ObjectId, ref: "Post" },
+    postDescription: { type: String, default: "" },
   },
   { timestamps: true }
 );

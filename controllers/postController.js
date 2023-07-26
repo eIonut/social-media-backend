@@ -1,13 +1,16 @@
 const Post = require("../models/Post");
 const { StatusCodes } = require("http-status-codes");
 const Comment = require("../models/Comment");
-
+const Notification = require("../models/Notification");
+const User = require("../models/User");
 const createPost = async (req, res) => {
-  // TODO, user-ul trebuie luat din request
   // TODO, adaugam imagini
 
   const { id: user } = req.user;
   const { description } = req.body;
+  const savedUser = await User.findOne({ _id: user });
+  const users = await User.find({ _id: { $ne: user } });
+  console.log(users);
 
   if (!description) {
     return res
@@ -15,15 +18,31 @@ const createPost = async (req, res) => {
       .json({ error: "No description provided!" });
   }
 
-  if (!user) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ error: "No user provided!" });
-  }
+  const message = `User ${savedUser.name} created a new post`;
 
+  const notification = {
+    user,
+    post: savedPost._id,
+    postDescription: savedPost.description,
+    message,
+  };
+  await Notification.create(notification);
   const post = { ...req.body };
   post.user = user;
   const savedPost = await Post.create(post);
+
+  for (let user of users) {
+    const message = `User ${savedUser.name} created a new post`;
+
+    const notification = {
+      user: user._id,
+      post: savedPost._id,
+      postDescription: savedPost.description,
+      message,
+    };
+    await Notification.create(notification);
+  }
+
   return res.status(StatusCodes.CREATED).json({ post: savedPost });
 };
 
@@ -113,6 +132,8 @@ const likePost = async (req, res) => {
   const { postId } = req.params;
   const { id: user } = req.user;
 
+  const savedUser = await User.findOne({ _id: user });
+
   const oldPost = await Post.findOne({ _id: postId, likedBy: user });
 
   if (oldPost) {
@@ -126,6 +147,19 @@ const likePost = async (req, res) => {
     { $inc: { likes: 1 }, $push: { likedBy: user } },
     { new: true, runValidators: true }
   );
+
+  if (post.user.toString() === user) {
+    const message = `User ${savedUser.name} liked the post`;
+
+    const notification = {
+      user,
+      post: postId,
+      postDescription: post.description,
+      message,
+    };
+    await Notification.create(notification);
+  }
+
   return res.status(StatusCodes.OK).json({ post });
 };
 
