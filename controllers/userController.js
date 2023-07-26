@@ -5,15 +5,17 @@ const getCurrentUser = async (req, res) => {
   const currentUser = req.user;
   const user = await User.findOne({ _id: currentUser.id }, "-password");
   if (!user) {
-    res.status(StatusCodes.BAD_REQUEST).json({ msg: "There is no user" });
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: "There is no user" });
   }
-  res.status(StatusCodes.OK).json({ user });
+  return res.status(StatusCodes.OK).json({ user });
 };
 
 const updateUserPassword = async (req, res) => {
   const { oldPassword, newPassword } = req.body;
   if (!oldPassword || !newPassword) {
-    res
+    return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ msg: "Please provide both values" });
   }
@@ -22,13 +24,27 @@ const updateUserPassword = async (req, res) => {
 
   const isPasswordCorrect = await user.comparePassword(oldPassword);
   if (!isPasswordCorrect) {
-    res.status(StatusCodes.BAD_REQUEST).json({ msg: "Invalid Credentials" });
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: "Invalid Credentials" });
   }
 
   user.password = newPassword;
 
   await user.save();
-  res.status(StatusCodes.OK).json({ msg: "Password updated!" });
+  return res.status(StatusCodes.OK).json({ msg: "Password updated!" });
 };
 
-module.exports = { getCurrentUser, updateUserPassword };
+const getOneUser = async (req, res) => {
+  const { userId } = req.params;
+  const user = await User.findOne(
+    { _id: userId },
+    { password: 0, notifications: 0, email: 0 }
+  );
+  if (!user) {
+    return res.status(StatusCodes.BAD_REQUEST).json({ msg: "User not found" });
+  }
+
+  return res.status(StatusCodes.OK).json({ user });
+};
+module.exports = { getCurrentUser, updateUserPassword, getOneUser };

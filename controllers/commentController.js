@@ -1,5 +1,6 @@
 const Comment = require("../models/Comment");
 const { StatusCodes } = require("http-status-codes");
+const Post = require("../models/Post");
 
 const createComment = async (req, res) => {
   const { id: user } = req.user;
@@ -71,16 +72,26 @@ const deleteComment = async (req, res) => {
       .json({ msg: `Comment with id ${commentId} not found` });
   }
 
+  // Check if the user is allowed to delete the comment
   if (comment.user.toString() !== user) {
     return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ msg: `Not allowed to delete this comment` });
   }
 
+  // Get the postId from the comment
+  const postId = comment.post;
+
+  // Remove the comment's reference from the post's comments array
+  await Post.findOneAndUpdate(
+    { _id: postId },
+    { $pull: { comments: commentId } }
+  );
+
   await comment.deleteOne();
   return res
     .status(StatusCodes.OK)
-    .json({ msg: `Succesfully deleted comment id: ${commentId}` });
+    .json({ msg: `Successfully deleted comment id: ${commentId}` });
 };
 
 const updateComment = async (req, res) => {

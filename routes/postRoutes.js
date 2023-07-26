@@ -9,6 +9,8 @@ const {
   updatePost,
   getUserPosts,
   likePost,
+  createPostComment,
+  dislikePost,
 } = require("../controllers/postController");
 
 const authMiddleware = require("../middleware/auth");
@@ -19,6 +21,8 @@ router
   .get(authMiddleware, getPosts);
 router.route("/userPosts").get(authMiddleware, getUserPosts);
 router.route("/like/:postId").patch(authMiddleware, likePost);
+router.route("/dislike/:postId").patch(authMiddleware, dislikePost);
+router.route("/comment/:postId").post(authMiddleware, createPostComment);
 router
   .route("/:postId")
   .get(authMiddleware, getOnePost)

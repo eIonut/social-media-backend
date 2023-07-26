@@ -18,6 +18,7 @@ const CommentSchema = new mongoose.Schema(
       default: 0,
     },
     likedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    post: { type: mongoose.Schema.Types.ObjectId, ref: "Post" },
   },
   { timestamps: true }
 );
