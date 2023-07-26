@@ -141,14 +141,12 @@ const dislikePost = async (req, res) => {
       .json({ msg: "You must like the post first!" });
   }
 
-  if (oldPost) {
-    const post = await Post.findOneAndUpdate(
-      { _id: postId },
-      { $inc: { likes: -1 }, $pull: { likedBy: user } },
-      { new: true, runValidators: true }
-    );
-    return res.status(StatusCodes.OK).json({ post });
-  }
+  const post = await Post.findOneAndUpdate(
+    { _id: postId },
+    { $inc: { likes: -1 }, $pull: { likedBy: user } },
+    { new: true, runValidators: true }
+  );
+  return res.status(StatusCodes.OK).json({ post });
 };
 
 const createPostComment = async (req, res) => {

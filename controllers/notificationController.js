@@ -1,8 +1,10 @@
-const Comment = require("../models/Comment");
+const Notification = require("../models/Notification");
 const { StatusCodes } = require("http-status-codes");
+const User = require("../models/User");
 
 const createNotification = async (req, res) => {
-  const { user, message } = req.body;
+  const { id: user } = req.user;
+  const { message } = req.body;
   if (!message) {
     return res
       .status(StatusCodes.BAD_REQUEST)
@@ -14,6 +16,63 @@ const createNotification = async (req, res) => {
       .status(StatusCodes.BAD_REQUEST)
       .json({ error: "No user provided!" });
   }
+
+  const notification = { ...req.body, user };
+  const savedNotification = await Notification.create(notification);
+
+  await User.findOneAndUpdate(
+    { _id: user },
+    { $push: { notifications: savedNotification } },
+    { new: true, runValidators: true }
+  );
+
+  return res
+    .status(StatusCodes.CREATED)
+    .json({ notification: savedNotification });
 };
 
-module.exports = { createNotification };
+const deleteNotification = async (req, res) => {
+  const { id: user } = req.user;
+  const { notificationId } = req.params;
+  const notification = await Notification.findOne({ _id: notificationId });
+
+  if (!notification) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: "Notification does not exist" });
+  }
+
+  if (user !== notification.user.toString()) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: "Not allowed to delete the notification" });
+  }
+
+  await User.findOneAndUpdate(
+    { _id: user },
+    { $pull: { notifications: notification._id } },
+    { new: true, runValidators: true }
+  );
+
+  await notification.deleteOne();
+  return res.status(StatusCodes.OK).json({ msg: "Notification deleted!" });
+};
+
+const getUserNotifications = async (req, res) => {
+  const { id: user } = req.user;
+  const notifications = await Notification.find({ user });
+
+  if (!notifications) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: "User has no notifications." });
+  }
+  return res
+    .status(StatusCodes.OK)
+    .json({ notifications, count: notifications.length });
+};
+module.exports = {
+  createNotification,
+  deleteNotification,
+  getUserNotifications,
+};
