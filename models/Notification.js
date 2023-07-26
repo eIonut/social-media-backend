@@ -12,6 +12,10 @@ const NotificationSchema = new mongoose.Schema(
       trim: true,
       required: [true, "Please provide a message"],
     },
+    isRead: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

@@ -71,8 +71,56 @@ const getUserNotifications = async (req, res) => {
     .status(StatusCodes.OK)
     .json({ notifications, count: notifications.length });
 };
+
+const readNotification = async (req, res) => {
+  const { id: user } = req.user;
+  const { notificationId } = req.params;
+  const notification = await Notification.findOne({ _id: notificationId });
+
+  if (!notification) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: "No notification to read" });
+  }
+
+  if (user !== notification.user.toString()) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: "Not allowed to read the notification" });
+  }
+
+  if (notification.isRead === true) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: "Notification already read" });
+  }
+
+  notification.isRead = true;
+  await notification.save();
+  res.status(StatusCodes.OK).json({ notification });
+};
+
+const readAllNotifications = async (req, res) => {
+  const { id: user } = req.user;
+  const notifications = await Notification.find({ user });
+
+  if (!notifications) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: "No notification to read" });
+  }
+
+  for (let notification of notifications) {
+    notification.isRead = true;
+    await notification.save();
+  }
+  res.status(StatusCodes.OK).json({ msg: "All notifications are read now!" });
+};
+
 module.exports = {
   createNotification,
   deleteNotification,
   getUserNotifications,
+  readNotification,
+  readAllNotifications,
 };
