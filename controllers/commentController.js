@@ -44,6 +44,28 @@ const likeComment = async (req, res) => {
   return res.status(StatusCodes.OK).json({ comment });
 };
 
+const dislikeComment = async (req, res) => {
+  const { commentId } = req.params;
+  const { id: user } = req.user;
+
+  const oldComment = await Comment.findOne({ _id: commentId, likedBy: user });
+
+  if (!oldComment) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: "You must like the comment first!" });
+  }
+
+  if (oldComment) {
+    const comment = await Comment.findOneAndUpdate(
+      { _id: commentId },
+      { $inc: { likes: -1 }, $pull: { likedBy: user } },
+      { new: true, runValidators: true }
+    );
+    return res.status(StatusCodes.OK).json({ comment });
+  }
+};
+
 const getAllComments = async (req, res) => {
   const comments = await Comment.find({});
   return res.status(StatusCodes.OK).json({ comments, count: comments.length });
@@ -120,6 +142,7 @@ const updateComment = async (req, res) => {
 module.exports = {
   createComment,
   likeComment,
+  dislikeComment,
   getAllComments,
   getOneComment,
   deleteComment,
