@@ -5,7 +5,8 @@ const createPost = async (req, res) => {
   // TODO, user-ul trebuie luat din request
   // TODO, adaugam imagini
 
-  const { description, user } = req.body;
+  const { id: user } = req.user;
+  const { description } = req.body;
 
   if (!description) {
     return res
@@ -19,8 +20,10 @@ const createPost = async (req, res) => {
       .json({ error: "No user provided!" });
   }
 
-  const post = await Post.create(req.body);
-  return res.status(StatusCodes.CREATED).json({ post });
+  const post = { ...req.body };
+  post.user = user;
+  const savedPost = await Post.create(post);
+  return res.status(StatusCodes.CREATED).json({ post: savedPost });
 };
 
 const getPosts = async (req, res) => {
@@ -40,12 +43,19 @@ const getOnePost = async (req, res) => {
 };
 
 const deletePost = async (req, res) => {
+  const { id: user } = req.user;
   const { postId } = req.params;
   const post = await Post.findOne({ _id: postId });
   if (!post) {
     return res
       .status(StatusCodes.NOT_FOUND)
       .json({ msg: `No post with id ${postId} ` });
+  }
+
+  if (post.user.toString() !== user) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: `Not allowed to delete this post` });
   }
 
   await post.deleteOne();
@@ -56,26 +66,55 @@ const deletePost = async (req, res) => {
 };
 
 const updatePost = async (req, res) => {
+  const { id: user } = req.user;
   const { postId } = req.params;
-  const post = await Post.findOneAndUpdate({ _id: postId }, req.body, {
-    new: true,
-    runValidators: true,
-  });
+  const { description } = req.body;
+
+  const post = await Post.findOne({ _id: postId });
   if (!post) {
     return res
       .status(StatusCodes.NOT_FOUND)
       .json({ msg: `No post with id ${postId} ` });
   }
+
+  if (post.user.toString() !== user) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: `Not allowed to update this post` });
+  }
+
+  post.description = description;
+  await post.save();
   return res.status(StatusCodes.OK).json({ post });
 };
 
 const getUserPosts = async (req, res) => {
-  const { userId } = req.params;
+  const { id: userId } = req.user;
   const posts = await Post.find({ user: userId });
   if (!posts) {
     return res.status(StatusCodes.NOT_FOUND).json({ msg: "User has no posts" });
   }
-  return res.status(StatusCodes.OK).json({ posts });
+  return res.status(StatusCodes.OK).json({ posts, count: posts.length });
+};
+
+const likePost = async (req, res) => {
+  const { postId } = req.params;
+  const { id: user } = req.user;
+
+  const oldPost = await Post.findOne({ _id: postId, likedBy: user });
+
+  if (oldPost) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: "User already liked the post" });
+  }
+
+  const post = await Post.findOneAndUpdate(
+    { _id: postId },
+    { $inc: { likes: 1 }, $push: { likedBy: user } },
+    { new: true, runValidators: true }
+  );
+  return res.status(StatusCodes.OK).json({ post });
 };
 
 module.exports = {
@@ -85,4 +124,5 @@ module.exports = {
   deletePost,
   updatePost,
   getUserPosts,
+  likePost,
 };

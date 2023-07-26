@@ -10,12 +10,17 @@ const {
   updateComment,
 } = require("../controllers/commentController");
 
-router.route("/").get(getAllComments).post(createComment);
+const authMiddleware = require("../middleware/auth");
+
+router
+  .route("/")
+  .get(authMiddleware, getAllComments)
+  .post(authMiddleware, createComment);
 router
   .route("/:commentId")
-  .patch(updateComment)
-  .get(getOneComment)
-  .delete(deleteComment);
-router.route("/like/:commentId").patch(likeComment);
+  .patch(authMiddleware, updateComment)
+  .get(authMiddleware, getOneComment)
+  .delete(authMiddleware, deleteComment);
+router.route("/like/:commentId").patch(authMiddleware, likeComment);
 
 module.exports = router;

@@ -4,6 +4,7 @@ require("express-async-errors");
 const authRouter = require("./routes/authRoutes");
 const postRouter = require("./routes/postRoutes");
 const commentRouter = require("./routes/commentRoutes");
+const userRouter = require("./routes/userRoutes");
 
 const express = require("express");
 const app = express();
@@ -17,6 +18,7 @@ app.use(express.json());
 app.use("/api/auth", authRouter);
 app.use("/api/post", postRouter);
 app.use("/api/comment", commentRouter);
+app.use("/api/me", userRouter);
 
 app.use(errorHandlerMiddleware);
 

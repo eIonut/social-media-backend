@@ -2,7 +2,8 @@ const Comment = require("../models/Comment");
 const { StatusCodes } = require("http-status-codes");
 
 const createComment = async (req, res) => {
-  const { description, user } = req.body;
+  const { id: user } = req.user;
+  const { description } = req.body;
   if (!description) {
     return res
       .status(StatusCodes.BAD_REQUEST)
@@ -15,13 +16,16 @@ const createComment = async (req, res) => {
       .json({ error: "No user provided!" });
   }
 
-  const comment = await Comment.create(req.body);
-  return res.status(StatusCodes.CREATED).json({ comment });
+  const comment = { ...req.body };
+  comment.user = user;
+  const savedComment = await Comment.create(comment);
+
+  return res.status(StatusCodes.CREATED).json({ comment: savedComment });
 };
 
 const likeComment = async (req, res) => {
   const { commentId } = req.params;
-  const { user } = req.body;
+  const { id: user } = req.user;
 
   const oldComment = await Comment.findOne({ _id: commentId, likedBy: user });
 
@@ -57,12 +61,20 @@ const getOneComment = async (req, res) => {
 };
 
 const deleteComment = async (req, res) => {
+  const { id: user } = req.user;
   const { commentId } = req.params;
   const comment = await Comment.findOne({ _id: commentId });
+
   if (!comment) {
     return res
       .status(StatusCodes.NOT_FOUND)
       .json({ msg: `Comment with id ${commentId} not found` });
+  }
+
+  if (comment.user.toString() !== user) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: `Not allowed to delete this comment` });
   }
 
   await comment.deleteOne();
@@ -72,16 +84,25 @@ const deleteComment = async (req, res) => {
 };
 
 const updateComment = async (req, res) => {
+  const { id: user } = req.user;
   const { commentId } = req.params;
-  const comment = await Comment.findOneAndUpdate({ _id: commentId }, req.body, {
-    new: true,
-    runValidators: true,
-  });
+  const { description } = req.body;
+  const comment = await Comment.findOne({ _id: commentId });
+
   if (!comment) {
     return res
       .status(StatusCodes.NOT_FOUND)
       .json({ msg: `Comment with id ${commentId} not found` });
   }
+
+  if (comment.user.toString() !== user) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: `Not allowed to update this comment` });
+  }
+
+  comment.description = description;
+  await comment.save();
   return res.status(StatusCodes.OK).json({ comment });
 };
 

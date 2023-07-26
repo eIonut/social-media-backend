@@ -8,10 +8,21 @@ const {
   deletePost,
   updatePost,
   getUserPosts,
+  likePost,
 } = require("../controllers/postController");
 
-router.route("/").post(createPost).get(getPosts);
-router.route("/userPosts/:userId").get(getUserPosts);
-router.route("/:postId").get(getOnePost).delete(deletePost).patch(updatePost);
+const authMiddleware = require("../middleware/auth");
+
+router
+  .route("/")
+  .post(authMiddleware, createPost)
+  .get(authMiddleware, getPosts);
+router.route("/userPosts").get(authMiddleware, getUserPosts);
+router.route("/like/:postId").patch(authMiddleware, likePost);
+router
+  .route("/:postId")
+  .get(authMiddleware, getOnePost)
+  .delete(authMiddleware, deletePost)
+  .patch(authMiddleware, updatePost);
 
 module.exports = router;
