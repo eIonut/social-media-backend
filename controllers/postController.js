@@ -3,9 +3,26 @@ const { StatusCodes } = require("http-status-codes");
 const Comment = require("../models/Comment");
 const Notification = require("../models/Notification");
 const User = require("../models/User");
+const path = require("path");
 
 const createPost = async (req, res) => {
-  // TODO, adaugam imagini
+  if (!req.files) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: "No file uploaded" });
+  }
+
+  const postImage = req.files.image;
+
+  if (!postImage.mimetype.startsWith("image")) {
+    return res.status(StatusCodes.BAD_REQUEST).json({ msg: "Upload an image" });
+  }
+
+  const imagePath = path.join(
+    __dirname,
+    "../public/uploads/" + `${postImage.name}`
+  );
+  await postImage.mv(imagePath);
 
   const { id: user } = req.user;
   const { description } = req.body;
@@ -18,17 +35,7 @@ const createPost = async (req, res) => {
       .json({ error: "No description provided!" });
   }
 
-  const message = `User ${savedUser.name} created a new post`;
-
-  const notification = {
-    user,
-    post: savedPost._id,
-    postDescription: savedPost.description,
-    message,
-  };
-  await Notification.create(notification);
-
-  const post = { ...req.body };
+  const post = { ...req.body, image: `/uploads/${postImage.name}` };
   post.user = user;
   const savedPost = await Post.create(post);
 
@@ -81,15 +88,12 @@ const deletePost = async (req, res) => {
       .json({ msg: `Not allowed to delete this post` });
   }
 
-  // Find all comments associated with the post
   const comments = await Comment.find({ post: postId });
 
-  // Delete the comments first
   for (const comment of comments) {
     await comment.deleteOne();
   }
 
-  // Delete the post after its comments have been deleted
   await post.deleteOne();
 
   return res
@@ -103,6 +107,7 @@ const updatePost = async (req, res) => {
   const { description } = req.body;
 
   const post = await Post.findOne({ _id: postId });
+
   if (!post) {
     return res
       .status(StatusCodes.NOT_FOUND)
@@ -115,7 +120,27 @@ const updatePost = async (req, res) => {
       .json({ msg: `Not allowed to update this post` });
   }
 
-  post.description = description;
+  if (req.files) {
+    const postImage = req.files.image;
+
+    if (!postImage.mimetype.startsWith("image")) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ msg: "Upload an image" });
+    }
+
+    const imagePath = path.join(
+      __dirname,
+      "../public/uploads/" + `${postImage.name}`
+    );
+    await postImage.mv(imagePath);
+    post.image = `/uploads/${postImage.name}`;
+  }
+
+  if (description) {
+    post.description = description;
+  }
+
   await post.save();
   return res.status(StatusCodes.OK).json({ post });
 };
@@ -224,9 +249,33 @@ const createPostComment = async (req, res) => {
   return res.status(StatusCodes.CREATED).json({ comment: savedComment });
 };
 
+const uploadImage = async (req, res) => {
+  console.log(req.files);
+  if (!req.files) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: "No file uploaded" });
+  }
+
+  const postImage = req.files.image;
+
+  if (!postImage.mimetype.startsWith("image")) {
+    return res.status(StatusCodes.BAD_REQUEST).json({ msg: "Upload an image" });
+  }
+
+  const imagePath = path.join(
+    __dirname,
+    "../public/uploads/" + `${postImage.name}`
+  );
+  await postImage.mv(imagePath);
+
+  res.status(StatusCodes.OK).json({ image: `/uploads/${postImage.name}` });
+};
+
 module.exports = {
   createPost,
   getPosts,
+  image: "/uploads/VIER PFOTEN_2019-07-18_013-2001x2000-600x600.jpg",
   getOnePost,
   deletePost,
   updatePost,
@@ -234,4 +283,5 @@ module.exports = {
   likePost,
   createPostComment,
   dislikePost,
+  uploadImage,
 };

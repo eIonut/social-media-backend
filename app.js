@@ -10,11 +10,16 @@ const notificationRouter = require("./routes/notificationRoutes");
 const express = require("express");
 const app = express();
 
+const fileUpload = require("express-fileupload");
+
 const connectDB = require("./db/connect");
 
 const errorHandlerMiddleware = require("./middleware/error-handler");
 
 app.use(express.json());
+
+app.use(express.static("./public"));
+app.use(fileUpload());
 
 app.use("/api/auth", authRouter);
 app.use("/api/post", postRouter);
