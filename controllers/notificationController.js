@@ -48,9 +48,23 @@ const deleteNotification = async (req, res) => {
       .json({ msg: "Not allowed to delete the notification" });
   }
 
+  const users = await User.find({});
+
+  for (let user of users) {
+    for (let notification of user.notifications) {
+      if (notification._id.toString() === notificationId) {
+        await User.findOneAndUpdate(
+          { _id: user },
+          { $pull: { notifications: notification } },
+          { new: true, runValidators: true }
+        );
+      }
+    }
+  }
+
   await User.findOneAndUpdate(
     { _id: user },
-    { $pull: { notifications: notification._id } },
+    { $pull: { notifications: notification } },
     { new: true, runValidators: true }
   );
 

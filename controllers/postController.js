@@ -85,6 +85,7 @@ const deletePost = async (req, res) => {
   const { postId } = req.params;
 
   const post = await Post.findOne({ _id: postId });
+  const users = await User.find({});
 
   if (!post) {
     return res
@@ -102,6 +103,24 @@ const deletePost = async (req, res) => {
 
   for (const comment of comments) {
     await comment.deleteOne();
+  }
+
+  const notifications = await Notification.find({ post: postId });
+
+  for (const notification of notifications) {
+    await notification.deleteOne();
+  }
+
+  for (let user of users) {
+    for (let notification of user.notifications) {
+      if (notification.post.toString() === postId) {
+        await User.findOneAndUpdate(
+          { _id: user },
+          { $pull: { notifications: notification } },
+          { new: true, runValidators: true }
+        );
+      }
+    }
   }
 
   await post.deleteOne();
@@ -262,7 +281,6 @@ const createPostComment = async (req, res) => {
 module.exports = {
   createPost,
   getPosts,
-  image: "/uploads/VIER PFOTEN_2019-07-18_013-2001x2000-600x600.jpg",
   getOnePost,
   deletePost,
   updatePost,
