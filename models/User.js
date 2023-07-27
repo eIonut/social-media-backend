@@ -24,7 +24,24 @@ const UserSchema = new mongoose.Schema({
     minlength: 6,
   },
   notifications: [
-    { type: mongoose.Schema.Types.ObjectId, ref: "Notification" },
+    {
+      user: {
+        type: mongoose.Types.ObjectId,
+        ref: "User",
+        required: true,
+      },
+      message: {
+        type: String,
+        trim: true,
+        required: [true, "Please provide a message"],
+      },
+      isRead: {
+        type: Boolean,
+        default: false,
+      },
+      post: { type: mongoose.Types.ObjectId, ref: "Post" },
+      postDescription: { type: String, default: "" },
+    },
   ],
   friends: [
     {

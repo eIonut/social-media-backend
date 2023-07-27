@@ -114,10 +114,19 @@ const removeFriend = async (req, res) => {
     .status(StatusCodes.OK)
     .json({ msg: "Friend removed successfully" });
 };
+
+const getAllFriends = async (req, res) => {
+  const { id: user } = req.user;
+  const currentUser = await User.findOne({ _id: user });
+  const friends = currentUser.friends;
+  return res.status(StatusCodes.OK).json({ friends, count: friends.length });
+};
+
 module.exports = {
   getCurrentUser,
   updateUserPassword,
   getOneUser,
+  getAllFriends,
   addFriend,
   removeFriend,
 };

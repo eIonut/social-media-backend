@@ -48,7 +48,17 @@ const createPost = async (req, res) => {
       postDescription: savedPost.description,
       message,
     };
-    await Notification.create(notification);
+    const savedNotification = await Notification.create(notification);
+
+    await User.findOneAndUpdate(
+      { _id: user._id },
+      {
+        $push: {
+          notifications: { ...notification, _id: savedNotification._id },
+        },
+      },
+      { new: true, runValidators: true }
+    );
   }
 
   return res.status(StatusCodes.CREATED).json({ post: savedPost });
