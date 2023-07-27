@@ -47,4 +47,77 @@ const getOneUser = async (req, res) => {
 
   return res.status(StatusCodes.OK).json({ user });
 };
-module.exports = { getCurrentUser, updateUserPassword, getOneUser };
+
+const addFriend = async (req, res) => {
+  const { id: user } = req.user;
+  const { friendId } = req.params;
+
+  if (!friendId) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: "Friend does not exist" });
+  }
+
+  const friend = await User.findOne({ _id: friendId });
+  const currentUser = await User.findOne({ _id: user });
+
+  for (let userFriend of currentUser.friends) {
+    if (userFriend._id.toString() === friendId) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ msg: `User ${userFriend.name} is already your friend` });
+    }
+  }
+
+  await User.findOneAndUpdate(
+    { _id: user },
+    { $push: { friends: { _id: friendId, name: friend.name } } },
+    { new: true, runValidators: true }
+  );
+
+  return res.status(StatusCodes.OK).json({ msg: "Friend added successfully" });
+};
+
+const removeFriend = async (req, res) => {
+  const { id: user } = req.user;
+  const { friendId } = req.params;
+
+  if (!friendId) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: "Friend does not exist" });
+  }
+
+  const friend = await User.findOne({ _id: friendId });
+  const currentUser = await User.findOne({ _id: user });
+
+  let isFriend = false;
+  for (let userFriend of currentUser.friends) {
+    if (userFriend._id.toString() === friend._id.toString()) {
+      isFriend = true;
+    }
+  }
+
+  if (!isFriend) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: `User ${friend.name} is not your friend` });
+  }
+
+  await User.findOneAndUpdate(
+    { _id: user },
+    { $pull: { friends: { _id: friendId } } },
+    { new: true, runValidators: true }
+  );
+
+  return res
+    .status(StatusCodes.OK)
+    .json({ msg: "Friend removed successfully" });
+};
+module.exports = {
+  getCurrentUser,
+  updateUserPassword,
+  getOneUser,
+  addFriend,
+  removeFriend,
+};

@@ -249,29 +249,6 @@ const createPostComment = async (req, res) => {
   return res.status(StatusCodes.CREATED).json({ comment: savedComment });
 };
 
-const uploadImage = async (req, res) => {
-  console.log(req.files);
-  if (!req.files) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ msg: "No file uploaded" });
-  }
-
-  const postImage = req.files.image;
-
-  if (!postImage.mimetype.startsWith("image")) {
-    return res.status(StatusCodes.BAD_REQUEST).json({ msg: "Upload an image" });
-  }
-
-  const imagePath = path.join(
-    __dirname,
-    "../public/uploads/" + `${postImage.name}`
-  );
-  await postImage.mv(imagePath);
-
-  res.status(StatusCodes.OK).json({ image: `/uploads/${postImage.name}` });
-};
-
 module.exports = {
   createPost,
   getPosts,
@@ -283,5 +260,4 @@ module.exports = {
   likePost,
   createPostComment,
   dislikePost,
-  uploadImage,
 };

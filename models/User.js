@@ -26,7 +26,18 @@ const UserSchema = new mongoose.Schema({
   notifications: [
     { type: mongoose.Schema.Types.ObjectId, ref: "Notification" },
   ],
-  friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  friends: [
+    {
+      _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      name: {
+        type: String,
+        required: true,
+      },
+    },
+  ],
 });
 
 UserSchema.pre("save", async function () {
