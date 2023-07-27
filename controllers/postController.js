@@ -3,6 +3,7 @@ const { StatusCodes } = require("http-status-codes");
 const Comment = require("../models/Comment");
 const Notification = require("../models/Notification");
 const User = require("../models/User");
+
 const createPost = async (req, res) => {
   // TODO, adaugam imagini
 
@@ -10,7 +11,6 @@ const createPost = async (req, res) => {
   const { description } = req.body;
   const savedUser = await User.findOne({ _id: user });
   const users = await User.find({ _id: { $ne: user } });
-  console.log(users);
 
   if (!description) {
     return res
@@ -27,6 +27,7 @@ const createPost = async (req, res) => {
     message,
   };
   await Notification.create(notification);
+
   const post = { ...req.body };
   post.user = user;
   const savedPost = await Post.create(post);
