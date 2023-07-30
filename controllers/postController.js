@@ -100,11 +100,16 @@ const deletePost = async (req, res) => {
       .json({ msg: `Not allowed to delete this post` });
   }
 
+  const users = await User.find({});
+
   await Comment.deleteMany({ post: postId });
 
+  await Notification.deleteMany({ post: postId });
+
   await User.updateMany(
-    { notifications: { $elemMatch: { post: postId } } },
-    { $pull: { notifications: { post: postId } } }
+    { "notifications.post": postId },
+    { $pull: { notifications: { post: postId } } },
+    { new: true, runValidators: true }
   );
 
   await post.deleteOne();
