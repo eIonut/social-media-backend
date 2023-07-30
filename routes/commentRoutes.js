@@ -13,10 +13,8 @@ const {
 
 const authMiddleware = require("../middleware/auth");
 
-router
-  .route("/")
-  .get(authMiddleware, getAllComments)
-  .post(authMiddleware, createComment);
+router.route("/").post(authMiddleware, createComment);
+router.route("/:postId").get(authMiddleware, getAllComments);
 router
   .route("/:commentId")
   .patch(authMiddleware, updateComment)

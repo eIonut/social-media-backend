@@ -14,4 +14,10 @@ const getChatHistory = async (req, res) => {
   res.status(StatusCodes.OK).json({ chatHistory });
 };
 
-module.exports = { getChatHistory };
+const createMessage = async (req, res) => {
+  console.log(req.body);
+  const message = await Message.create(req.body);
+  return res.status(StatusCodes.CREATED).json({ message });
+};
+
+module.exports = { createMessage, getChatHistory };

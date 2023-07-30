@@ -9,13 +9,15 @@ const notificationRouter = require("./routes/notificationRoutes");
 const chatRouter = require("./routes/chatRoutes");
 
 const Message = require("./models/Message");
+const Post = require("./models/Post");
+const Comment = require("./models/Comment");
 
 const express = require("express");
 const app = express();
 const http = require("http");
 const server = http.createServer(app);
 const { Server } = require("socket.io");
-const io = new Server({
+const io = new Server(server, {
   cors: {
     origin: "http://localhost:5173",
   },
@@ -41,42 +43,76 @@ app.use("/api/chat", chatRouter);
 
 app.use(errorHandlerMiddleware);
 
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 4000;
 
-io.listen(4000);
-io.on("connection", async (socket) => {
-  console.log("user connected");
-  socket.on("disconnect", () => {
-    console.log("user disconnected");
-  });
-
-  socket.on("send-message", async ({ message, sender, recipient }) => {
-    const newMessage = {
-      sender,
-      message,
-      recipient,
-    };
-
-    // observe pe colectia respectiva
-    // inlcouiesc socket send message
-    //sa adaug un post pt mesaje
-    // si inlocuiesc in frontend emitter-ul
-
-    await Message.create(newMessage);
-
-    io.emit("new-message", newMessage);
-  });
-});
-
-const start = async () => {
+const setupChangeStream = async () => {
   try {
-    await connectDB(process.env.MONGO_URL);
-    server.listen(port, () =>
-      console.log(`Server is listening on port ${port}`)
-    );
+    await Message.watch().on("change", (change) => {
+      if (change.operationType === "insert") {
+        const newMessage = change.fullDocument;
+        io.emit("new-message", newMessage);
+        console.log(newMessage);
+      }
+    });
+
+    await Post.watch().on("change", (change) => {
+      if (change.operationType === "delete") {
+        const deletedPostId = change.documentKey._id;
+        io.emit("delete-post", deletedPostId);
+        console.log(deletedPostId);
+      }
+    });
+
+    await Post.watch().on("change", (change) => {
+      if (change.operationType === "insert") {
+        const insertedPost = change.fullDocument;
+        io.emit("add-post", insertedPost);
+        console.log(insertedPost);
+      }
+    });
+
+    await Post.watch().on("change", async (change) => {
+      if (change.operationType === "update") {
+        const updatedPostId = change.documentKey._id;
+        const updatedPost = await Post.findById(updatedPostId);
+        io.emit("edit-post", updatedPost);
+      }
+    });
+
+    await Comment.watch().on("change", (change) => {
+      if (change.operationType === "delete") {
+        const deletedCommentId = change.documentKey._id;
+        io.emit("delete-comment", deletedCommentId);
+      }
+    });
+
+    await Comment.watch().on("change", (change) => {
+      if (change.operationType === "insert") {
+        const insertedComment = change.fullDocument;
+        io.emit("add-comment", insertedComment);
+        console.log(insertedComment);
+      }
+    });
+
+    await Comment.watch().on("change", async (change) => {
+      if (change.operationType === "update") {
+        const updatedCommentId = change.documentKey._id;
+        const updatedComment = await Comment.findById(updatedCommentId);
+        io.emit("edit-comment", updatedComment);
+      }
+    });
   } catch (error) {
-    console.log(error);
+    console.error("Error setting up change stream:", error);
   }
 };
 
-start();
+connectDB(process.env.MONGO_URL)
+  .then(() => {
+    server.listen(port, async () => {
+      console.log(`Server is listening on port ${port}`);
+      await setupChangeStream();
+    });
+  })
+  .catch((error) => {
+    console.log(error);
+  });

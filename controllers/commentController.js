@@ -67,7 +67,8 @@ const dislikeComment = async (req, res) => {
 };
 
 const getAllComments = async (req, res) => {
-  const comments = await Comment.find({});
+  const { postId } = req.params;
+  const comments = await Comment.find({ post: postId });
   return res.status(StatusCodes.OK).json({ comments, count: comments.length });
 };
 

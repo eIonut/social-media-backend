@@ -6,23 +6,24 @@ const User = require("../models/User");
 const path = require("path");
 
 const createPost = async (req, res) => {
-  if (!req.files) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ msg: "No file uploaded" });
-  }
+  // if (!req.files) {
+  //   return res
+  //     .status(StatusCodes.BAD_REQUEST)
+  //     .json({ msg: "No file uploaded" });
+  // }
 
-  const postImage = req.files.image;
+  // const postImage = req.files.image;
 
-  if (!postImage.mimetype.startsWith("image")) {
-    return res.status(StatusCodes.BAD_REQUEST).json({ msg: "Upload an image" });
-  }
+  // if (!postImage.mimetype.startsWith("image")) {
+  //   return res.status(StatusCodes.BAD_REQUEST).json({ msg: "Upload an image" });
+  // }
 
-  const imagePath = path.join(
-    __dirname,
-    "../public/uploads/" + `${postImage.name}`
-  );
-  await postImage.mv(imagePath);
+  // const imagePath = path.join(
+  //   __dirname,
+  //   "../../uploads/" + `${postImage.name}`
+  // );
+
+  // await postImage.mv(imagePath);
 
   const { id: user } = req.user;
   const { description } = req.body;
@@ -35,10 +36,11 @@ const createPost = async (req, res) => {
       .json({ error: "No description provided!" });
   }
 
-  const post = { ...req.body, image: `/uploads/${postImage.name}` };
+  // const post = { ...req.body, image: `/uploads/${postImage.name}` };
+  const post = { ...req.body };
   post.user = user;
   const savedPost = await Post.create(post);
-
+  console.log(savedUser);
   for (let user of users) {
     const message = `User ${savedUser.name} created a new post`;
 
@@ -85,7 +87,6 @@ const deletePost = async (req, res) => {
   const { postId } = req.params;
 
   const post = await Post.findOne({ _id: postId });
-  const users = await User.find({});
 
   if (!post) {
     return res
@@ -99,29 +100,12 @@ const deletePost = async (req, res) => {
       .json({ msg: `Not allowed to delete this post` });
   }
 
-  const comments = await Comment.find({ post: postId });
+  await Comment.deleteMany({ post: postId });
 
-  for (const comment of comments) {
-    await comment.deleteOne();
-  }
-
-  const notifications = await Notification.find({ post: postId });
-
-  for (const notification of notifications) {
-    await notification.deleteOne();
-  }
-
-  for (let user of users) {
-    for (let notification of user.notifications) {
-      if (notification.post.toString() === postId) {
-        await User.findOneAndUpdate(
-          { _id: user },
-          { $pull: { notifications: notification } },
-          { new: true, runValidators: true }
-        );
-      }
-    }
-  }
+  await User.updateMany(
+    { notifications: { $elemMatch: { post: postId } } },
+    { $pull: { notifications: { post: postId } } }
+  );
 
   await post.deleteOne();
 
