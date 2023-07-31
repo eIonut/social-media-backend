@@ -11,6 +11,7 @@ const chatRouter = require("./routes/chatRoutes");
 const Message = require("./models/Message");
 const Post = require("./models/Post");
 const Comment = require("./models/Comment");
+const User = require("./models/User");
 
 const express = require("express");
 const app = express();
@@ -47,11 +48,16 @@ const port = process.env.PORT || 4000;
 
 const setupChangeStream = async () => {
   try {
-    await Message.watch().on("change", (change) => {
+    await Message.watch().on("change", async (change) => {
       if (change.operationType === "insert") {
         const newMessage = change.fullDocument;
-        io.emit("new-message", newMessage);
+
+        const sender = await User.findOne({ _id: newMessage.sender });
+        const recipient = await User.findOne({ _id: newMessage.recipient });
+        newMessage.senderName = sender.name;
+        newMessage.recipientName = recipient.name;
         console.log(newMessage);
+        io.emit("new-message", newMessage);
       }
     });
 
@@ -59,7 +65,6 @@ const setupChangeStream = async () => {
       if (change.operationType === "delete") {
         const deletedPostId = change.documentKey._id;
         io.emit("delete-post", deletedPostId);
-        console.log(deletedPostId);
       }
     });
 
@@ -67,7 +72,6 @@ const setupChangeStream = async () => {
       if (change.operationType === "insert") {
         const insertedPost = change.fullDocument;
         io.emit("add-post", insertedPost);
-        console.log(insertedPost);
       }
     });
 
@@ -90,7 +94,6 @@ const setupChangeStream = async () => {
       if (change.operationType === "insert") {
         const insertedComment = change.fullDocument;
         io.emit("add-comment", insertedComment);
-        console.log(insertedComment);
       }
     });
 
