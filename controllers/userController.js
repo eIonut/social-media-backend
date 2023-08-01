@@ -12,6 +12,19 @@ const getCurrentUser = async (req, res) => {
   return res.status(StatusCodes.OK).json({ user });
 };
 
+const getAllUsers = async (req, res) => {
+  const { id: user } = req.user;
+
+  const users = await User.find({ _id: { $ne: user } }, "-password");
+  console.log(users);
+  if (!users) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: "There is no users" });
+  }
+  return res.status(StatusCodes.OK).json({ users });
+};
+
 const updateUserPassword = async (req, res) => {
   const { oldPassword, newPassword } = req.body;
   if (!oldPassword || !newPassword) {
@@ -51,6 +64,12 @@ const getOneUser = async (req, res) => {
 const addFriend = async (req, res) => {
   const { id: user } = req.user;
   const { friendId } = req.params;
+
+  if (friendId === user) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ msg: "Cannot add yourself to friends" });
+  }
 
   if (!friendId) {
     return res
@@ -129,4 +148,5 @@ module.exports = {
   getAllFriends,
   addFriend,
   removeFriend,
+  getAllUsers,
 };

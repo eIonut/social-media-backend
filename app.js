@@ -127,6 +127,16 @@ const setupChangeStream = async () => {
         io.emit("read-notification", updatedNotificationId);
       }
     });
+
+    await User.watch().on("change", async (change) => {
+      if (change.operationType === "update") {
+        const userId = change.documentKey._id;
+        const updatedUser = await User.findById(userId);
+        const updatedUserFriends = updatedUser.friends;
+
+        io.emit("add-friend", updatedUserFriends);
+      }
+    });
   } catch (error) {
     console.error("Error setting up change stream:", error);
   }
