@@ -73,7 +73,7 @@ const deleteNotification = async (req, res) => {
 };
 
 const getUserNotifications = async (req, res) => {
-  const { id: user } = req.user;
+  const { userId: user } = req.params;
   const notifications = await Notification.find({ user });
 
   if (!notifications) {

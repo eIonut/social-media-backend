@@ -40,7 +40,6 @@ const createPost = async (req, res) => {
   const post = { ...req.body };
   post.user = user;
   const savedPost = await Post.create(post);
-  console.log(savedUser);
   for (let user of users) {
     const message = `User ${savedUser.name} created a new post`;
 
@@ -176,6 +175,7 @@ const likePost = async (req, res) => {
   const { postId } = req.params;
   const { id: user } = req.user;
 
+  const users = await User.find({ _id: { $ne: user } });
   const savedUser = await User.findOne({ _id: user });
 
   const oldPost = await Post.findOne({ _id: postId, likedBy: user });
@@ -192,16 +192,26 @@ const likePost = async (req, res) => {
     { new: true, runValidators: true }
   );
 
-  if (post.user.toString() === user) {
-    const message = `User ${savedUser.name} liked the post`;
+  for (let user of users) {
+    const message = `User ${savedUser.name} liked a new post`;
 
     const notification = {
-      user,
-      post: postId,
+      user: user._id,
+      post: post._id,
       postDescription: post.description,
       message,
     };
-    await Notification.create(notification);
+    const savedNotification = await Notification.create(notification);
+
+    await User.findOneAndUpdate(
+      { _id: user._id },
+      {
+        $push: {
+          notifications: { ...notification, _id: savedNotification._id },
+        },
+      },
+      { new: true, runValidators: true }
+    );
   }
 
   return res.status(StatusCodes.OK).json({ post });
@@ -212,6 +222,7 @@ const dislikePost = async (req, res) => {
   const { id: user } = req.user;
 
   const oldPost = await Post.findOne({ _id: postId, likedBy: user });
+  const users = await User.find({ _id: { $ne: user } });
 
   if (!oldPost) {
     return res
@@ -224,6 +235,11 @@ const dislikePost = async (req, res) => {
     { $inc: { likes: -1 }, $pull: { likedBy: user } },
     { new: true, runValidators: true }
   );
+
+  for (let user of users) {
+    await Notification.findOneAndDelete({ user: user._id });
+  }
+
   return res.status(StatusCodes.OK).json({ post });
 };
 

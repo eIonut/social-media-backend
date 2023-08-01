@@ -11,11 +11,9 @@ const {
 
 const authMiddleware = require("../middleware/auth");
 
-router
-  .route("/")
-  .post(authMiddleware, createNotification)
-  .get(authMiddleware, getUserNotifications);
+router.route("/").post(authMiddleware, createNotification);
 router.route("/:notificationId").delete(authMiddleware, deleteNotification);
+router.route("/:userId").get(authMiddleware, getUserNotifications);
 router
   .route("/readNotification/:notificationId")
   .patch(authMiddleware, readNotification);

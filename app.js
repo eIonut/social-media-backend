@@ -12,6 +12,7 @@ const Message = require("./models/Message");
 const Post = require("./models/Post");
 const Comment = require("./models/Comment");
 const User = require("./models/User");
+const Notification = require("./models/Notification");
 
 const express = require("express");
 const app = express();
@@ -68,9 +69,10 @@ const setupChangeStream = async () => {
       }
     });
 
-    await Post.watch().on("change", (change) => {
+    await Post.watch().on("change", async (change) => {
       if (change.operationType === "insert") {
         const insertedPost = change.fullDocument;
+
         io.emit("add-post", insertedPost);
       }
     });
@@ -102,6 +104,27 @@ const setupChangeStream = async () => {
         const updatedCommentId = change.documentKey._id;
         const updatedComment = await Comment.findById(updatedCommentId);
         io.emit("edit-comment", updatedComment);
+      }
+    });
+
+    await Notification.watch().on("change", async (change) => {
+      if (change.operationType === "insert") {
+        const notification = change.fullDocument;
+        io.emit("add-notification", notification);
+      }
+    });
+
+    await Notification.watch().on("change", (change) => {
+      if (change.operationType === "delete") {
+        const deletedNotificationId = change.documentKey._id;
+        io.emit("delete-notification", deletedNotificationId);
+      }
+    });
+
+    await Notification.watch().on("change", (change) => {
+      if (change.operationType === "update") {
+        const updatedNotificationId = change.documentKey._id;
+        io.emit("read-notification", updatedNotificationId);
       }
     });
   } catch (error) {
