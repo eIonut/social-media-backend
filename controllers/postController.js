@@ -5,19 +5,8 @@ const Notification = require("../models/Notification");
 const User = require("../models/User");
 const path = require("path");
 const fs = require('fs');
-const util = require('util');
 
 const createPost = async (req, res) => {
-  const postImage = req.files && req.files.image;
-
-  let imageUrl = null;
-  if (postImage) {
-    try {
-      imageUrl = await saveImageToServer(postImage);
-    } catch (err) {
-      console.error("Error saving image:", err);
-    }
-  }
 
   const { id: user } = req.user;
   const { description } = req.body;
@@ -28,6 +17,19 @@ const createPost = async (req, res) => {
     return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ error: "No description provided!" });
+  }
+
+  const postImage = req.files && req.files.image;
+
+  let imageUrl = null;
+  if (postImage) {
+    try {
+      imageUrl = await saveImageToServer(postImage);
+    } catch (err) {
+      console.error("Error saving image:", err);
+    }
+  } else {
+    imageUrl = '/uploads/example.jpg'
   }
 
   const post = { ...req.body, image: imageUrl }; // Use the image URL instead of base64Image
@@ -94,7 +96,14 @@ const deletePost = async (req, res) => {
       .json({ msg: `Not allowed to delete this post` });
   }
 
-  const users = await User.find({});
+  if (post.image && post.image !== '/uploads/example.jpg') {
+    const imagePath = path.join(__dirname, '../public', post.image);
+    fs.unlink(imagePath, (err) => {
+      if (err) {
+        console.error('Error deleting image:', err);
+      }
+    });
+  }
 
   await Comment.deleteMany({ post: postId });
 
