@@ -4,26 +4,20 @@ const Comment = require("../models/Comment");
 const Notification = require("../models/Notification");
 const User = require("../models/User");
 const path = require("path");
+const fs = require('fs');
+const util = require('util');
 
 const createPost = async (req, res) => {
-  // if (!req.files) {
-  //   return res
-  //     .status(StatusCodes.BAD_REQUEST)
-  //     .json({ msg: "No file uploaded" });
-  // }
+  const postImage = req.files && req.files.image;
 
-  // const postImage = req.files.image;
-
-  // if (!postImage.mimetype.startsWith("image")) {
-  //   return res.status(StatusCodes.BAD_REQUEST).json({ msg: "Upload an image" });
-  // }
-
-  // const imagePath = path.join(
-  //   __dirname,
-  //   "../../uploads/" + `${postImage.name}`
-  // );
-
-  // await postImage.mv(imagePath);
+  let imageUrl = null;
+  if (postImage) {
+    try {
+      imageUrl = await saveImageToServer(postImage);
+    } catch (err) {
+      console.error("Error saving image:", err);
+    }
+  }
 
   const { id: user } = req.user;
   const { description } = req.body;
@@ -36,8 +30,9 @@ const createPost = async (req, res) => {
       .json({ error: "No description provided!" });
   }
 
-  // const post = { ...req.body, image: `/uploads/${postImage.name}` };
-  const post = { ...req.body };
+  const post = { ...req.body, image: imageUrl }; // Use the image URL instead of base64Image
+  console.log(imageUrl);
+
   post.user = user;
   const savedPost = await Post.create(post);
   for (let user of users) {
@@ -281,6 +276,24 @@ const createPostComment = async (req, res) => {
   );
 
   return res.status(StatusCodes.CREATED).json({ comment: savedComment });
+};
+
+const saveImageToServer = (postImage) => {
+  return new Promise((resolve, reject) => {
+    const uniqueFilename = Date.now() + '_' + postImage.name;
+
+    const uploadPath = path.join(__dirname, '../public/uploads/', uniqueFilename);
+
+    fs.writeFile(uploadPath, postImage.data, (err) => {
+      if (err) {
+        console.error('Error saving image:', err);
+        reject(err);
+      } else {
+        const imageUrl = '/uploads/' + uniqueFilename;
+        resolve(imageUrl);
+      }
+    });
+  });
 };
 
 module.exports = {
