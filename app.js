@@ -47,9 +47,9 @@ app.use(errorHandlerMiddleware);
 
 const port = process.env.PORT || 4000;
 
-const setupChangeStream = async () => {
+const setupChangeStream = () => {
   try {
-    await Message.watch().on("change", async (change) => {
+    Message.watch().on("change", async (change) => {
       if (change.operationType === "insert") {
         const newMessage = change.fullDocument;
 
@@ -62,22 +62,18 @@ const setupChangeStream = async () => {
       }
     });
 
-    await Post.watch().on("change", (change) => {
+    Post.watch().on("change", async (change) => {
       if (change.operationType === "delete") {
         const deletedPostId = change.documentKey._id;
         io.emit("delete-post", deletedPostId);
       }
-    });
 
-    await Post.watch().on("change", async (change) => {
       if (change.operationType === "insert") {
         const insertedPost = change.fullDocument;
 
         io.emit("add-post", insertedPost);
       }
-    });
 
-    await Post.watch().on("change", async (change) => {
       if (change.operationType === "update") {
         const updatedPostId = change.documentKey._id;
         const updatedPost = await Post.findById(updatedPostId);
@@ -85,21 +81,17 @@ const setupChangeStream = async () => {
       }
     });
 
-    await Comment.watch().on("change", (change) => {
+    Comment.watch().on("change", async (change) => {
       if (change.operationType === "delete") {
         const deletedCommentId = change.documentKey._id;
         io.emit("delete-comment", deletedCommentId);
       }
-    });
 
-    await Comment.watch().on("change", (change) => {
       if (change.operationType === "insert") {
         const insertedComment = change.fullDocument;
         io.emit("add-comment", insertedComment);
       }
-    });
 
-    await Comment.watch().on("change", async (change) => {
       if (change.operationType === "update") {
         const updatedCommentId = change.documentKey._id;
         const updatedComment = await Comment.findById(updatedCommentId);
@@ -107,28 +99,24 @@ const setupChangeStream = async () => {
       }
     });
 
-    await Notification.watch().on("change", async (change) => {
+    Notification.watch().on("change", async (change) => {
       if (change.operationType === "insert") {
         const notification = change.fullDocument;
         io.emit("add-notification", notification);
       }
-    });
 
-    await Notification.watch().on("change", (change) => {
       if (change.operationType === "delete") {
         const deletedNotificationId = change.documentKey._id;
         io.emit("delete-notification", deletedNotificationId);
       }
-    });
 
-    await Notification.watch().on("change", (change) => {
       if (change.operationType === "update") {
         const updatedNotificationId = change.documentKey._id;
         io.emit("read-notification", updatedNotificationId);
       }
     });
 
-    await User.watch().on("change", async (change) => {
+    User.watch().on("change", async (change) => {
       if (change.operationType === "update") {
         const userId = change.documentKey._id;
         const updatedUser = await User.findById(userId);
@@ -146,7 +134,7 @@ connectDB(process.env.MONGO_URL)
   .then(() => {
     server.listen(port, async () => {
       console.log(`Server is listening on port ${port}`);
-      await setupChangeStream();
+      setupChangeStream();
     });
   })
   .catch((error) => {
