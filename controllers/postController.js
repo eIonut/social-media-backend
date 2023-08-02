@@ -63,7 +63,7 @@ const createPost = async (req, res) => {
 };
 
 const getPosts = async (req, res) => {
-  const posts = await Post.find({});
+  const posts = await Post.find({}).sort({ updatedAt: -1 });
   return res.status(StatusCodes.OK).json({ posts, count: posts.length });
 };
 
